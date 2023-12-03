@@ -1,16 +1,22 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My First HTML Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="main.js" defer></script>
+  <title>Loan Payoff Calculator</title>
 </head>
 <body>
-
-    <header>
-        <h1>2:53</h1>
-    </header>
-
+  <div id="chart-container">
+    <label for="income">Income:</label>
+    <input type="number" id="income" placeholder="Enter your monthly income" />
+    <br />
+    <label for="loanAmount">Loan Amount:</label>
+    <input type="number" id="loanAmount" placeholder="Enter the loan amount" />
+    <br />
+    <button onclick="calculatePayoff()">Calculate Payoff</button>
+  </div>
 </body>
 </html>
-
