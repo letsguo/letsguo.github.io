@@ -36,65 +36,54 @@ Those who first took out federal loans after July 1, 2014 qualify for the more g
 var svg; // Declare the svg variable outside the functions for global access
 
 function calculatePayoff() {
-  // Get input values
   var annualIncome = parseFloat(document.getElementById("annualIncome").value);
   var loanAmount = parseFloat(document.getElementById("loanAmount").value);
 
-  // Validate input
   if (isNaN(annualIncome) || isNaN(loanAmount)) {
     alert("Please enter valid numeric values.");
     return;
   }
 
-  // Convert annual income to monthly income
   var monthlyIncome = annualIncome / 12;
 
-  // Monthly payment calculation with interest
-  var monthlyInterestRate = 0.1 / 12; // Convert yearly interest rate to monthly
+  var monthlyInterestRate = 0.06 / 12;
   var monthlyPayment = (monthlyIncome * 0.1) * (1 - Math.pow(1 + monthlyInterestRate, -12)) / monthlyInterestRate + (loanAmount * monthlyInterestRate);
 
-  // Calculate the number of months to pay off the loan
   var monthsToPayOff = Math.ceil(loanAmount / monthlyPayment);
 
-  // Update chart
   updateChart(loanAmount, monthlyPayment, monthsToPayOff);
 }
 
 function updateChart(initialLoanAmount, monthlyPayment, monthsToPayOff) {
-  // Clear previous chart elements
   d3.select("#chart-container svg").remove();
 
-  // Set up chart dimensions
-  var margin = { top: 20, right: 20, bottom: 30, left: 50 };
+  var margin = { top: 20, right: 20, bottom: 50, left: 100 };
   var width = 600 - margin.left - margin.right;
   var height = 400 - margin.top - margin.bottom;
 
-  // Create SVG element with margin
   svg = d3.select("#chart-container")
     .append("svg")
-    .attr("width", "80%")
-    .attr("height", "80%")
+    .attr("width", "70%")
+    .attr("height", "70%")
     .attr("viewBox", "0 0 " + (width + margin.left + margin.right) + " " + (height + margin.top + margin.bottom))
     .attr("preserveAspectRatio", "xMidYMid meet")
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  // Create x-axis
   var xScale = d3.scaleLinear()
-    .domain([0, monthsToPayOff])
+    .domain([0,Math.min(monthsToPayOff, 26)])
     .range([0, width]);
 
   var xAxis = d3.axisBottom(xScale)
-    .ticks(monthsToPayOff);
+  .ticks(Math.min(monthsToPayOff, 26));
 
   svg.append("g")
     .attr("transform", "translate(0," + height + ")")
     .call(xAxis)
-    .selectAll("line") // Apply styles to the axis lines
+    .selectAll("line")
     .style("stroke-width", 2)
     .style("stroke", "black");
 
-  // Create y-axis
   var yScale = d3.scaleLinear()
     .domain([0, initialLoanAmount])
     .range([height, 0]);
@@ -103,11 +92,24 @@ function updateChart(initialLoanAmount, monthlyPayment, monthsToPayOff) {
 
   svg.append("g")
     .call(yAxis)
-    .selectAll("line") // Apply styles to the axis lines
+    .selectAll("line")
     .style("stroke-width", 2)
     .style("stroke", "black");
 
-  // Draw the line representing the remaining loan amount over time
+  svg.append("text")
+    .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 15) + ")") // Adjust the 30 based on your preference
+    .style("text-anchor", "middle")
+    .text("Months");
+
+  svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x", 0 - (height / 2))
+    .attr("dy", "2em")  // Increase the distance from the left edge
+    .style("text-anchor", "middle")
+    .text("Dollars left");
+
+
   var line = d3.line()
     .x(function (d, i) { return xScale(i); })
     .y(function (d) { return yScale(d); });
@@ -129,8 +131,17 @@ function calculateRemainingLoanAmounts(initialLoanAmount, monthlyPayment, months
   for (var i = 0; i <= monthsToPayOff; i++) {
     remainingLoanAmounts.push(remainingAmount);
     remainingAmount -= monthlyPayment;
+
+    if (i >= 25) {
+      remainingAmount = 0;
+      remainingLoanAmounts.push(remainingAmount);
+      break
+    }
+
     if (remainingAmount < 0) {
       remainingAmount = 0;
+      remainingLoanAmounts.push(remainingAmount);
+      break
     }
   }
 
