@@ -31,72 +31,108 @@ Those who first took out federal loans after July 1, 2014 qualify for the more g
 */
 
 
-// Sample data for four lines
-var data1 = [10, 30, 20, 40, 30];
-var data2 = [5, 25, 15, 35, 25];
-var data3 = [15, 35, 25, 45, 35];
-var data4 = [20, 40, 30, 50, 40];
+// main.js
 
-// Set up chart dimensions
-var margin = { top: 20, right: 20, bottom: 30, left: 50 };
-var width = 600 - margin.left - margin.right; // Adjust the width
-var height = 400 - margin.top - margin.bottom; // Adjust the height
+var svg; // Declare the svg variable outside the functions for global access
 
-// Create SVG element with margin
-var svg = d3.select("#chart-container")
-  .append("svg")
-  .attr("width", "60%") // Use 100% of the container width
-  .attr("height", "60%") // Use 100% of the container height
-  .attr("viewBox", "0 0 " + (width + margin.left + margin.right) + " " + (height + margin.top + margin.bottom))
-  .attr("preserveAspectRatio", "xMidYMid meet") // Center the SVG content
-  .append("g")
-  .attr("transform", "translate(" + margin.left + "," + margin.top + ")"); // Apply the margin
+function calculatePayoff() {
+  // Get input values
+  var annualIncome = parseFloat(document.getElementById("annualIncome").value);
+  var loanAmount = parseFloat(document.getElementById("loanAmount").value);
 
-// Create x-axis
-var xScale = d3.scaleLinear()
-  .domain([0, data1.length - 1])
-  .range([0, width]);
+  // Validate input
+  if (isNaN(annualIncome) || isNaN(loanAmount)) {
+    alert("Please enter valid numeric values.");
+    return;
+  }
 
-var xAxis = d3.axisBottom(xScale)
-  .ticks(data1.length); // Adjust the number of ticks
+  // Convert annual income to monthly income
+  var monthlyIncome = annualIncome / 12;
 
-svg.append("g")
-  .attr("transform", "translate(0," + height + ")")
-  .call(xAxis)
-  .selectAll("line") // Apply styles to the axis lines
-  .style("stroke-width", 2)
-  .style("stroke", "black");
+  // Monthly payment calculation with interest
+  var monthlyInterestRate = 0.1 / 12; // Convert yearly interest rate to monthly
+  var monthlyPayment = (monthlyIncome * 0.1) * (1 - Math.pow(1 + monthlyInterestRate, -12)) / monthlyInterestRate + (loanAmount * monthlyInterestRate);
 
-// Create y-axis
-var yScale = d3.scaleLinear()
-  .domain([0, d3.max([...data1, ...data2, ...data3, ...data4])])
-  .range([height, 0]);
+  // Calculate the number of months to pay off the loan
+  var monthsToPayOff = Math.ceil(loanAmount / monthlyPayment);
 
-var yAxis = d3.axisLeft(yScale);
+  // Update chart
+  updateChart(loanAmount, monthlyPayment, monthsToPayOff);
+}
 
-svg.append("g")
-  .call(yAxis)
-  .selectAll("line") // Apply styles to the axis lines
-  .style("stroke-width", 2)
-  .style("stroke", "black");
+function updateChart(initialLoanAmount, monthlyPayment, monthsToPayOff) {
+  // Clear previous chart elements
+  d3.select("#chart-container svg").remove();
 
-// Create lines
-function createLine(data, color) {
+  // Set up chart dimensions
+  var margin = { top: 20, right: 20, bottom: 30, left: 50 };
+  var width = 600 - margin.left - margin.right;
+  var height = 400 - margin.top - margin.bottom;
+
+  // Create SVG element with margin
+  svg = d3.select("#chart-container")
+    .append("svg")
+    .attr("width", "80%")
+    .attr("height", "80%")
+    .attr("viewBox", "0 0 " + (width + margin.left + margin.right) + " " + (height + margin.top + margin.bottom))
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  // Create x-axis
+  var xScale = d3.scaleLinear()
+    .domain([0, monthsToPayOff])
+    .range([0, width]);
+
+  var xAxis = d3.axisBottom(xScale)
+    .ticks(monthsToPayOff);
+
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .selectAll("line") // Apply styles to the axis lines
+    .style("stroke-width", 2)
+    .style("stroke", "black");
+
+  // Create y-axis
+  var yScale = d3.scaleLinear()
+    .domain([0, initialLoanAmount])
+    .range([height, 0]);
+
+  var yAxis = d3.axisLeft(yScale);
+
+  svg.append("g")
+    .call(yAxis)
+    .selectAll("line") // Apply styles to the axis lines
+    .style("stroke-width", 2)
+    .style("stroke", "black");
+
+  // Draw the line representing the remaining loan amount over time
   var line = d3.line()
-    .x(function(d, i) { return xScale(i); })
-    .y(function(d) { return yScale(d); });
+    .x(function (d, i) { return xScale(i); })
+    .y(function (d) { return yScale(d); });
 
+  var remainingLoanAmounts = calculateRemainingLoanAmounts(initialLoanAmount, monthlyPayment, monthsToPayOff);
   svg.append("path")
-    .data([data])
+    .data([remainingLoanAmounts])
     .attr("class", "line")
     .attr("d", line)
-    .style("stroke", color)
+    .style("stroke", "blue")
     .style("stroke-width", 2)
     .style("fill", "none");
 }
 
-// Call the function to create lines
-createLine(data1, "red");
-createLine(data2, "green");
-createLine(data3, "blue");
-createLine(data4, "purple");
+function calculateRemainingLoanAmounts(initialLoanAmount, monthlyPayment, monthsToPayOff) {
+  var remainingLoanAmounts = [];
+  var remainingAmount = initialLoanAmount;
+
+  for (var i = 0; i <= monthsToPayOff; i++) {
+    remainingLoanAmounts.push(remainingAmount);
+    remainingAmount -= monthlyPayment;
+    if (remainingAmount < 0) {
+      remainingAmount = 0;
+    }
+  }
+
+  return remainingLoanAmounts;
+}
